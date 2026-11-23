@@ -38,7 +38,9 @@ public class BuildHandler {
             return;
         }
 
-        Item wallItem = Item.getItemFromBlock(Blocks.cobblestone_wall);
+        Item wallItem = Item.getItemFromBlock(
+            Blocks.cobblestone_wall
+        );
 
         int slot = findWallSlot(
             player.inventory.mainInventory,
@@ -69,7 +71,9 @@ public class BuildHandler {
             feet.offset(right),
             new BlockPos(
                 target.posX,
-                target.posY + target.height,
+                MathHelper.floor_double(
+                    target.posY + target.height
+                ) + 1,
                 target.posZ
             )
         };
