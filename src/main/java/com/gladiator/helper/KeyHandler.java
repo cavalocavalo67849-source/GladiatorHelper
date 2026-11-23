@@ -27,11 +27,13 @@ public class KeyHandler {
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         if (activateKey.isPressed()) {
+            BuildHandler.build();
+
             if (net.minecraft.client.Minecraft.getMinecraft().thePlayer != null) {
                 net.minecraft.client.Minecraft.getMinecraft()
                     .thePlayer.addChatMessage(
                         new ChatComponentText(
-                            "§a[GladiatorHelper] §fTecla ativada!"
+                            "§a[GladiatorHelper] §fConstrução executada!"
                         )
                     );
             }
