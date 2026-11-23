@@ -61,22 +61,25 @@ public class BuildHandler {
         EnumFacing left = facing.rotateYCCW();
         EnumFacing right = facing.rotateY();
 
-        BlockPos feet = new BlockPos(
+        AxisAlignedBB box = target.getEntityBoundingBox();
+
+        int feetY = MathHelper.floor_double(target.posY);
+
+        BlockPos leftPos = getSidePosition(box, feetY, left);
+        BlockPos rightPos = getSidePosition(box, feetY, right);
+
+        BlockPos topPos = new BlockPos(
             target.posX,
-            target.posY,
+            MathHelper.floor_double(
+                target.posY + target.height
+            ) + 1,
             target.posZ
         );
 
         BlockPos[] positions = new BlockPos[] {
-            feet.offset(left),
-            feet.offset(right),
-            new BlockPos(
-                target.posX,
-                MathHelper.floor_double(
-                    target.posY + target.height
-                ) + 1,
-                target.posZ
-            )
+            leftPos,
+            rightPos,
+            topPos
         };
 
         int placed = 0;
@@ -97,6 +100,32 @@ public class BuildHandler {
                 " de 3 muros colocados."
             )
         );
+    }
+
+    private static BlockPos getSidePosition(
+        AxisAlignedBB box,
+        int y,
+        EnumFacing side
+    ) {
+        int x = MathHelper.floor_double(
+            (box.minX + box.maxX) / 2.0
+        );
+
+        int z = MathHelper.floor_double(
+            (box.minZ + box.maxZ) / 2.0
+        );
+
+        if (side == EnumFacing.EAST) {
+            x = MathHelper.floor_double(box.maxX) + 1;
+        } else if (side == EnumFacing.WEST) {
+            x = MathHelper.floor_double(box.minX) - 1;
+        } else if (side == EnumFacing.SOUTH) {
+            z = MathHelper.floor_double(box.maxZ) + 1;
+        } else if (side == EnumFacing.NORTH) {
+            z = MathHelper.floor_double(box.minZ) - 1;
+        }
+
+        return new BlockPos(x, y, z);
     }
 
     private static EntityLivingBase findNearestMob(
