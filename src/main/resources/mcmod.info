@@ -1,14 +1,12 @@
+
 [
   {
     "modid": "gladiatorhelper",
     "name": "Gladiator Helper",
-    "description": "Auxiliar para PvP no Minecraft 1.8.9",
-    "version": "1.0",
+    "description": "Helper mod for Minecraft Gladiator PvP.",
+    "version": "1.0.0",
     "mcversion": "1.8.9",
     "authorList": ["cavalocavalo67849-source"],
-    "credits": "",
-    "logoFile": "",
-    "screenshots": [],
-    "dependencies": []
+    "credits": "GladiatorHelper Project"
   }
 ]
