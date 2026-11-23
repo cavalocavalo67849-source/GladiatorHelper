@@ -3,6 +3,7 @@ package com.gladiator.helper;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
@@ -11,7 +12,6 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.Vec3;
-import net.minecraft.world.World;
 
 import java.util.List;
 
@@ -25,25 +25,32 @@ public class BuildHandler {
         }
 
         EntityPlayerSP player = mc.thePlayer;
-        World world = mc.theWorld;
+        WorldClient world = mc.theWorld;
 
         EntityLivingBase target = findNearestMob(player, world);
 
         if (target == null) {
-            player.addChatMessage(new net.minecraft.util.ChatComponentText(
-                "§cNenhum mob encontrado em 5 blocos."
-            ));
+            player.addChatMessage(
+                new net.minecraft.util.ChatComponentText(
+                    "§cNenhum mob encontrado em 5 blocos."
+                )
+            );
             return;
         }
 
         Item wallItem = Item.getItemFromBlock(Blocks.cobblestone_wall);
 
-        int slot = findWallSlot(player.inventory.mainInventory, wallItem);
+        int slot = findWallSlot(
+            player.inventory.mainInventory,
+            wallItem
+        );
 
         if (slot == -1) {
-            player.addChatMessage(new net.minecraft.util.ChatComponentText(
-                "§cVocê precisa de muros de pedregulho!"
-            ));
+            player.addChatMessage(
+                new net.minecraft.util.ChatComponentText(
+                    "§cVocê precisa de muros de pedregulho!"
+                )
+            );
             return;
         }
 
@@ -79,19 +86,26 @@ public class BuildHandler {
             }
         }
 
-        player.addChatMessage(new net.minecraft.util.ChatComponentText(
-            "§aGladiatorHelper: §f" + placed + " de 3 muros colocados."
-        ));
+        player.addChatMessage(
+            new net.minecraft.util.ChatComponentText(
+                "§aGladiatorHelper: §f" + placed +
+                " de 3 muros colocados."
+            )
+        );
     }
 
     private static EntityLivingBase findNearestMob(
-        EntityPlayerSP player, World world
+        EntityPlayerSP player,
+        WorldClient world
     ) {
         AxisAlignedBB area = player.getEntityBoundingBox()
             .expand(5, 5, 5);
 
         List<EntityLivingBase> entities =
-            world.getEntitiesWithinAABB(EntityLivingBase.class, area);
+            world.getEntitiesWithinAABB(
+                EntityLivingBase.class,
+                area
+            );
 
         EntityLivingBase nearest = null;
         double bestDistance = 5.0;
@@ -112,12 +126,16 @@ public class BuildHandler {
         return nearest;
     }
 
-    private static int findWallSlot(ItemStack[] inventory, Item wallItem) {
+    private static int findWallSlot(
+        ItemStack[] inventory,
+        Item wallItem
+    ) {
         for (int i = 0; i < 9; i++) {
             ItemStack stack = inventory[i];
 
-            if (stack != null && stack.getItem() == wallItem
-                    && stack.stackSize > 0) {
+            if (stack != null
+                && stack.getItem() == wallItem
+                && stack.stackSize > 0) {
                 return i;
             }
         }
@@ -128,20 +146,21 @@ public class BuildHandler {
     private static boolean placeAtSupport(
         Minecraft mc,
         EntityPlayerSP player,
-        World world,
+        WorldClient world,
         BlockPos target,
         int slot
     ) {
-        EnumFacing[] directions = EnumFacing.values();
-
-        for (EnumFacing side : directions) {
-            BlockPos support = target.offset(side.getOpposite());
+        for (EnumFacing side : EnumFacing.values()) {
+            BlockPos support = target.offset(
+                side.getOpposite()
+            );
 
             if (world.isAirBlock(support)) {
                 continue;
             }
 
-            ItemStack stack = player.inventory.getStackInSlot(slot);
+            ItemStack stack =
+                player.inventory.getStackInSlot(slot);
 
             if (stack == null || stack.stackSize <= 0) {
                 return false;
@@ -150,13 +169,22 @@ public class BuildHandler {
             player.inventory.currentItem = slot;
 
             Vec3 hit = new Vec3(
-                support.getX() + 0.5 + side.getFrontOffsetX() * 0.5,
-                support.getY() + 0.5 + side.getFrontOffsetY() * 0.5,
-                support.getZ() + 0.5 + side.getFrontOffsetZ() * 0.5
+                support.getX() + 0.5
+                    + side.getFrontOffsetX() * 0.5,
+                support.getY() + 0.5
+                    + side.getFrontOffsetY() * 0.5,
+                support.getZ() + 0.5
+                    + side.getFrontOffsetZ() * 0.5
             );
 
             if (mc.playerController.onPlayerRightClick(
-                    player, world, stack, support, side, hit)) {
+                player,
+                world,
+                stack,
+                support,
+                side,
+                hit
+            )) {
                 return true;
             }
         }
