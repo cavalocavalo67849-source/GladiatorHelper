@@ -27,6 +27,7 @@ public class BuildHandler {
     private static int currentIndex = 0;
     private static int waitTicks = 0;
     private static int attempts = 0;
+    private static int stackSizeBeforePlacement = -1;
 
     private static BlockPos awaitingPosition = null;
 
@@ -106,6 +107,7 @@ public class BuildHandler {
         currentIndex = 0;
         waitTicks = 0;
         attempts = 0;
+        stackSizeBeforePlacement = -1;
         awaitingPosition = null;
 
         player.addChatMessage(
@@ -130,18 +132,31 @@ public class BuildHandler {
         EntityPlayerSP player = mc.thePlayer;
         WorldClient world = mc.theWorld;
 
-        // Aguarda a confirmação do servidor.
         if (awaitingPosition != null) {
             waitTicks++;
 
-            if (world.getBlockState(awaitingPosition).getBlock()
-                == Blocks.cobblestone_wall) {
+            if (waitTicks < CONFIRMATION_WAIT) {
+                return;
+            }
 
+            ItemStack currentStack =
+                player.inventory.getStackInSlot(pendingSlot);
+
+            boolean inventoryConfirmed =
+                currentStack == null
+                || currentStack.stackSize < stackSizeBeforePlacement;
+
+            boolean blockConfirmed =
+                world.getBlockState(awaitingPosition).getBlock()
+                == Blocks.cobblestone_wall;
+
+            if (inventoryConfirmed && blockConfirmed) {
                 placed++;
                 currentIndex++;
                 awaitingPosition = null;
                 waitTicks = 0;
                 attempts = 0;
+                stackSizeBeforePlacement = -1;
 
                 if (currentIndex >= pendingPositions.size()) {
                     finish(player);
@@ -150,13 +165,9 @@ public class BuildHandler {
                 return;
             }
 
-            if (waitTicks < CONFIRMATION_WAIT) {
-                return;
-            }
-
-            // A colocação não foi confirmada.
             awaitingPosition = null;
             waitTicks = 0;
+            stackSizeBeforePlacement = -1;
             attempts++;
 
             if (attempts >= MAX_ATTEMPTS) {
@@ -196,12 +207,15 @@ public class BuildHandler {
             return;
         }
 
+        stackSizeBeforePlacement = stack.stackSize;
+
         if (placeAtSupport(
             mc, player, world, pos, pendingSlot
         )) {
             awaitingPosition = pos;
             waitTicks = 0;
         } else {
+            stackSizeBeforePlacement = -1;
             attempts++;
 
             if (attempts >= MAX_ATTEMPTS) {
@@ -239,6 +253,7 @@ public class BuildHandler {
         currentIndex = 0;
         waitTicks = 0;
         attempts = 0;
+        stackSizeBeforePlacement = -1;
         awaitingPosition = null;
     }
 
@@ -350,6 +365,8 @@ public class BuildHandler {
             }
 
             player.inventory.currentItem = slot;
+
+            mc.playerController.updateController();
 
             Vec3 hit = new Vec3(
                 support.getX() + 0.5
