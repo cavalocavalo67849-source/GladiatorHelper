@@ -1,4 +1,3 @@
-
 package com.gladiator.helper;
 
 import net.minecraft.client.Minecraft;
@@ -14,14 +13,25 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BuildHandler {
+
+    private static final List<BlockPos> pendingPositions =
+        new ArrayList<BlockPos>();
+
+    private static int pendingSlot = -1;
+    private static int placed = 0;
 
     public static void build() {
         Minecraft mc = Minecraft.getMinecraft();
 
         if (mc.thePlayer == null || mc.theWorld == null) {
+            return;
+        }
+
+        if (!pendingPositions.isEmpty()) {
             return;
         }
 
@@ -43,12 +53,12 @@ public class BuildHandler {
             Blocks.cobblestone_wall
         );
 
-        int slot = findWallSlot(
+        pendingSlot = findWallSlot(
             player.inventory.mainInventory,
             wallItem
         );
 
-        if (slot == -1) {
+        if (pendingSlot == -1) {
             player.addChatMessage(
                 new net.minecraft.util.ChatComponentText(
                     "§cVocê precisa de muros de pedregulho!"
@@ -65,8 +75,13 @@ public class BuildHandler {
 
         int feetY = MathHelper.floor_double(target.posY);
 
-        BlockPos leftPos = getSidePosition(box, feetY, left);
-        BlockPos rightPos = getSidePosition(box, feetY, right);
+        BlockPos leftPos = getSidePosition(
+            box, feetY, left
+        );
+
+        BlockPos rightPos = getSidePosition(
+            box, feetY, right
+        );
 
         BlockPos topPos = new BlockPos(
             target.posX,
@@ -76,30 +91,68 @@ public class BuildHandler {
             target.posZ
         );
 
-        BlockPos[] positions = new BlockPos[] {
-            leftPos,
-            rightPos,
-            topPos
-        };
+        pendingPositions.clear();
 
-        int placed = 0;
+        pendingPositions.add(leftPos);
+        pendingPositions.add(rightPos);
+        pendingPositions.add(topPos);
 
-        for (BlockPos pos : positions) {
-            if (!world.isAirBlock(pos)) {
-                continue;
-            }
+        placed = 0;
 
-            if (placeAtSupport(mc, player, world, pos, slot)) {
+        player.addChatMessage(
+            new net.minecraft.util.ChatComponentText(
+                "§a§lGladiatorHelper §fConstruindo..."
+            )
+        );
+    }
+
+    public static void tick() {
+        Minecraft mc = Minecraft.getMinecraft();
+
+        if (pendingPositions.isEmpty()) {
+            return;
+        }
+
+        if (mc.thePlayer == null || mc.theWorld == null) {
+            pendingPositions.clear();
+            return;
+        }
+
+        EntityPlayerSP player = mc.thePlayer;
+        WorldClient world = mc.theWorld;
+
+        ItemStack stack =
+            player.inventory.getStackInSlot(pendingSlot);
+
+        if (stack == null || stack.stackSize <= 0) {
+            pendingPositions.clear();
+
+            player.addChatMessage(
+                new net.minecraft.util.ChatComponentText(
+                    "§cOs muros acabaram!"
+                )
+            );
+            return;
+        }
+
+        BlockPos pos = pendingPositions.remove(0);
+
+        if (world.isAirBlock(pos)) {
+            if (placeAtSupport(
+                mc, player, world, pos, pendingSlot
+            )) {
                 placed++;
             }
         }
 
-        player.addChatMessage(
-            new net.minecraft.util.ChatComponentText(
-                "§aGladiatorHelper: §f" + placed +
-                " de 3 muros colocados."
-            )
-        );
+        if (pendingPositions.isEmpty()) {
+            player.addChatMessage(
+                new net.minecraft.util.ChatComponentText(
+                    "§aGladiatorHelper: §f" +
+                    placed + " de 3 muros colocados."
+                )
+            );
+        }
     }
 
     private static BlockPos getSidePosition(
@@ -184,7 +237,16 @@ public class BuildHandler {
         BlockPos target,
         int slot
     ) {
-        for (EnumFacing side : EnumFacing.values()) {
+        EnumFacing[] sides = {
+            EnumFacing.UP,
+            EnumFacing.NORTH,
+            EnumFacing.SOUTH,
+            EnumFacing.WEST,
+            EnumFacing.EAST,
+            EnumFacing.DOWN
+        };
+
+        for (EnumFacing side : sides) {
             BlockPos support = target.offset(
                 side.getOpposite()
             );
