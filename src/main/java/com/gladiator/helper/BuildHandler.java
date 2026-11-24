@@ -77,7 +77,12 @@ public class BuildHandler {
             return;
         }
 
-        EnumFacing facing = player.getHorizontalFacing();
+        // Direção calculada pela posição do jogador,
+        // independentemente da direção da mira.
+        EnumFacing facing = getDirectionToPlayer(
+            player, target
+        );
+
         AxisAlignedBB box = target.getEntityBoundingBox();
 
         int feetY = MathHelper.floor_double(target.posY);
@@ -90,11 +95,12 @@ public class BuildHandler {
             box, feetY, facing.rotateY()
         );
 
+        // Deixa um bloco vazio entre a cabeça e o muro.
         BlockPos topPos = new BlockPos(
             target.posX,
             MathHelper.floor_double(
                 target.posY + target.height
-            ) + 1,
+            ) + 2,
             target.posZ
         );
 
@@ -115,6 +121,24 @@ public class BuildHandler {
                 "§a§lGladiatorHelper §fConstruindo..."
             )
         );
+    }
+
+    private static EnumFacing getDirectionToPlayer(
+        EntityPlayerSP player,
+        EntityLivingBase target
+    ) {
+        double dx = player.posX - target.posX;
+        double dz = player.posZ - target.posZ;
+
+        if (Math.abs(dx) > Math.abs(dz)) {
+            return dx > 0
+                ? EnumFacing.EAST
+                : EnumFacing.WEST;
+        }
+
+        return dz > 0
+            ? EnumFacing.SOUTH
+            : EnumFacing.NORTH;
     }
 
     public static void tick() {
