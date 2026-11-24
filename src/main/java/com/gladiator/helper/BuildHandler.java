@@ -24,6 +24,14 @@ public class BuildHandler {
 
     private static int pendingSlot = -1;
     private static int placed = 0;
+    private static int currentIndex = 0;
+    private static int waitTicks = 0;
+    private static int attempts = 0;
+
+    private static BlockPos awaitingPosition = null;
+
+    private static final int CONFIRMATION_WAIT = 20;
+    private static final int MAX_ATTEMPTS = 2;
 
     public static void build() {
         Minecraft mc = Minecraft.getMinecraft();
@@ -95,6 +103,10 @@ public class BuildHandler {
         pendingPositions.add(topPos);
 
         placed = 0;
+        currentIndex = 0;
+        waitTicks = 0;
+        attempts = 0;
+        awaitingPosition = null;
 
         player.addChatMessage(
             new net.minecraft.util.ChatComponentText(
@@ -111,45 +123,123 @@ public class BuildHandler {
         }
 
         if (mc.thePlayer == null || mc.theWorld == null) {
-            pendingPositions.clear();
+            reset();
             return;
         }
 
         EntityPlayerSP player = mc.thePlayer;
         WorldClient world = mc.theWorld;
 
+        // Aguarda a confirmação do servidor.
+        if (awaitingPosition != null) {
+            waitTicks++;
+
+            if (world.getBlockState(awaitingPosition).getBlock()
+                == Blocks.cobblestone_wall) {
+
+                placed++;
+                currentIndex++;
+                awaitingPosition = null;
+                waitTicks = 0;
+                attempts = 0;
+
+                if (currentIndex >= pendingPositions.size()) {
+                    finish(player);
+                }
+
+                return;
+            }
+
+            if (waitTicks < CONFIRMATION_WAIT) {
+                return;
+            }
+
+            // A colocação não foi confirmada.
+            awaitingPosition = null;
+            waitTicks = 0;
+            attempts++;
+
+            if (attempts >= MAX_ATTEMPTS) {
+                fail(player);
+                return;
+            }
+        }
+
+        if (currentIndex >= pendingPositions.size()) {
+            finish(player);
+            return;
+        }
+
         ItemStack stack =
             player.inventory.getStackInSlot(pendingSlot);
 
         if (stack == null || stack.stackSize <= 0) {
-            pendingPositions.clear();
-
-            player.addChatMessage(
-                new net.minecraft.util.ChatComponentText(
-                    "§cOs muros acabaram!"
-                )
-            );
+            fail(player);
             return;
         }
 
-        BlockPos pos = pendingPositions.remove(0);
+        BlockPos pos = pendingPositions.get(currentIndex);
 
-        if (world.isAirBlock(pos)) {
-            if (placeAtSupport(
-                mc, player, world, pos, pendingSlot
-            )) {
+        if (!world.isAirBlock(pos)) {
+            if (world.getBlockState(pos).getBlock()
+                == Blocks.cobblestone_wall) {
                 placed++;
             }
+
+            currentIndex++;
+            attempts = 0;
+
+            if (currentIndex >= pendingPositions.size()) {
+                finish(player);
+            }
+
+            return;
         }
 
-        if (pendingPositions.isEmpty()) {
-            player.addChatMessage(
-                new net.minecraft.util.ChatComponentText(
-                    "§aGladiatorHelper: §f" +
-                    placed + " de 3 muros colocados."
-                )
-            );
+        if (placeAtSupport(
+            mc, player, world, pos, pendingSlot
+        )) {
+            awaitingPosition = pos;
+            waitTicks = 0;
+        } else {
+            attempts++;
+
+            if (attempts >= MAX_ATTEMPTS) {
+                fail(player);
+            }
         }
+    }
+
+    private static void finish(EntityPlayerSP player) {
+        player.addChatMessage(
+            new net.minecraft.util.ChatComponentText(
+                "§aGladiatorHelper: §f" +
+                placed + " de 3 muros confirmados."
+            )
+        );
+
+        reset();
+    }
+
+    private static void fail(EntityPlayerSP player) {
+        player.addChatMessage(
+            new net.minecraft.util.ChatComponentText(
+                "§cGladiatorHelper: §fNão foi possível confirmar " +
+                "a colocação. " + placed + " de 3 muros confirmados."
+            )
+        );
+
+        reset();
+    }
+
+    private static void reset() {
+        pendingPositions.clear();
+        pendingSlot = -1;
+        placed = 0;
+        currentIndex = 0;
+        waitTicks = 0;
+        attempts = 0;
+        awaitingPosition = null;
     }
 
     private static BlockPos getSidePosition(
