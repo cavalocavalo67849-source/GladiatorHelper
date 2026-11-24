@@ -1,3 +1,4 @@
+
 package com.gladiator.helper;
 
 import net.minecraft.client.Minecraft;
@@ -68,19 +69,16 @@ public class BuildHandler {
         }
 
         EnumFacing facing = player.getHorizontalFacing();
-        EnumFacing left = facing.rotateYCCW();
-        EnumFacing right = facing.rotateY();
-
         AxisAlignedBB box = target.getEntityBoundingBox();
 
         int feetY = MathHelper.floor_double(target.posY);
 
         BlockPos leftPos = getSidePosition(
-            box, feetY, left
+            box, feetY, facing.rotateYCCW()
         );
 
         BlockPos rightPos = getSidePosition(
-            box, feetY, right
+            box, feetY, facing.rotateY()
         );
 
         BlockPos topPos = new BlockPos(
@@ -92,7 +90,6 @@ public class BuildHandler {
         );
 
         pendingPositions.clear();
-
         pendingPositions.add(leftPos);
         pendingPositions.add(rightPos);
         pendingPositions.add(topPos);
